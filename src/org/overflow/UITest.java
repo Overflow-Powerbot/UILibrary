@@ -53,52 +53,47 @@ public class UITest extends Canvas implements Runnable {
         try {
             this.screen = new Screen().attachComponent(this);
             this.screen.submitWidget(new WProfilerPanel(profiler).setYOffset(400));
-            for (int x = 0; x < 1; x++) {
-                final WFrame frame = new WFrame().setXOffset(x * 10).setYOffset(x * 10);
-                frame.getTitle().setText("Title Pane");
-                final WProgressBar bar = new WProgressBar();
-                bar.submitAction(new UIAction(5000, true) {
-                    int i = 1;
+            final WFrame frame = new WFrame().setXOffset(10).setYOffset(10);
+            frame.getTitle().setText("Title Pane");
+            final WPanel contentPanel = frame.getContentPanel();
+            contentPanel.submitWidget(new WPanel(ResourceLocale.NIL).setLayoutManager(new FlowLayout()).submitWidget(new WLabel().setText("Runtime: ")).submitWidget(new WStopwatch(new AtomicLong(System.currentTimeMillis() + 60000))));
+            final WProgressBar bar = new WProgressBar();
+            bar.submitAction(new UIAction(5000, true) {
+                int i = 1;
+
+                @Override
+                public void update() {
+                    bar.setPercentage(i++ % 100);
+                }
+            });
+            contentPanel.submitWidget(bar);
+            final WTabPanel tabs = new WTabPanel();
+            for (int i = 0; i < 2; i++) {
+                final WProgressBar progressBar = new WProgressBar();
+                progressBar.submitAction(new UIAction(1000, true) {
+                    int i = 0;
 
                     @Override
                     public void update() {
-                        bar.setPercentage(i++ % 100);
+                        progressBar.setPercentage(i++ % 100);
                     }
                 });
-                frame.getContentPanel().submitWidget(new WPanel(ResourceLocale.NIL).setLayoutManager(new FlowLayout()).submitWidget(new WLabel().setText("Runtime: ")).submitWidget(new WStopwatch(new AtomicLong(System.currentTimeMillis() + 60000))));
-                frame.getContentPanel().submitWidget(bar);
-                final WTabPanel panel = new WTabPanel();
-                for (int i = 0; i < 2; i++) {
-                    try {
-                        final WProgressBar progressBar = new WProgressBar();
-                        progressBar.submitAction(new UIAction(1000, true) {
-                            int i = 0;
-
+                final int finalI = i;
+                tabs.submitTab("Tab: " + i, new WPanel().setLayoutManager(new FlowLayout(FlowLayout.VERTICAL_FLOW, 5)).setYOffset(50).
+                        submitWidget(new WLabel().setText("Tab: " + i)).
+                        submitWidget(progressBar).
+                        submitWidget(new WCheckbox()).
+                        submitWidget(new WButton().submitWidget(new WLabel().setText("Widget Button " + i)).submitMouseHandler(new InputHandler.Mouse(1) {
                             @Override
-                            public void update() {
-                                progressBar.setPercentage(i++ % 100);
+                            protected boolean execute(Widget widget, MouseEvent event) {
+                                if (event.getID() == MouseEvent.MOUSE_CLICKED)
+                                    System.out.println("Tab " + finalI + " Button pressed");
+                                return true;
                             }
-                        });
-                        panel.submitTab("Tab: " + i, new WPanel().setLayoutManager(new FlowLayout(FlowLayout.VERTICAL_FLOW, 5)).setYOffset(50).
-                                submitWidget(new WLabel().setText("Tab: " + i)).
-                                submitWidget(progressBar).
-                                submitWidget(new WCheckbox()).
-                                submitWidget(new WButton().submitWidget(new WLabel().setText("Widget Button " + i)).submitMouseHandler(new InputHandler.Mouse(1) {
-                                    @Override
-                                    protected boolean execute(Widget widget, MouseEvent event) {
-                                        if (event.getID() == MouseEvent.MOUSE_CLICKED)
-                                            System.out.println("Button pressed");
-                                        return true;
-                                    }
-                                })));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                frame.getContentPanel().submitWidget(panel);
-                screen.submitWidget(frame);
+                        })));
             }
-            screen.submitWidget(new WLabel().setXOffset(50).setYOffset(200).setText("Test Label").setFont(new Font(Font.SERIF, Font.PLAIN, 32)));
+            contentPanel.submitWidget(tabs);
+            screen.submitWidget(frame);
         } catch (Exception e) {
             e.printStackTrace();
         }
